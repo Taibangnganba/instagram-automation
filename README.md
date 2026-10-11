@@ -1,4 +1,4 @@
-# capcutclips-automation
+# instagram-automation
 
 Hands-off pipeline for the Instagram page **@kambam.capcutclips**. It runs on GitHub Actions; nothing needs to stay switched on at home.
 
