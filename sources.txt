@@ -1,0 +1,9 @@
+# One source video per line. The pipeline works through them top to bottom.
+#
+#   <video URL> | <credit shown in the caption>
+#
+# Only add videos you are allowed to clip: your own footage, clipping
+# campaigns that invite clippers, or creators who gave you permission.
+#
+# Example:
+# https://www.youtube.com/watch?v=XXXXXXXXXXX | @creatorhandle

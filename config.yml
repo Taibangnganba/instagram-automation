@@ -1,0 +1,22 @@
+# Settings for the kambam.capcutclips pipeline. Edit and commit; the next run picks them up.
+
+# How many of the best clips to keep from each source video.
+clips_per_video: 4
+
+# Only make new clips when fewer than this many are waiting to be posted.
+min_ready_clips: 6
+
+# Only the first N minutes of a source are processed (keeps runs fast and free).
+max_source_minutes: 30
+
+# Burn the AI-written hook text on screen for the first seconds of each clip.
+auto_hook: true
+
+# Added under every caption.
+hashtags: "#comedy #funny #viral #reels #explore #clips"
+
+# Credit line added to every caption. {source} becomes the name you gave in sources.txt.
+credit_line: "🎥 {source}"
+
+# Skip a clip after this many failed posting attempts.
+max_attempts: 3

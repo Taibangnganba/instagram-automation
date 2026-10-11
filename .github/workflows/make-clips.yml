@@ -1,0 +1,110 @@
+name: Make clips
+
+# Takes the next video from sources.txt, lets OpenShorts cut it into captioned
+# 9:16 clips, and stores them in the "clips" release until they are posted.
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # daily, 07:47 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: make-clips
+  cancel-in-progress: false
+
+env:
+  # Pinned OpenShorts version (https://github.com/mutonby/openshorts, MIT).
+  OPENSHORTS_REF: 0240abeccc0e18463f6fd3f881767c4bc33ae3a6
+
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -q -r requirements.txt
+
+      - name: Pick the next source video
+        id: next
+        run: python scripts/next_source.py
+
+      - name: Free disk space
+        if: steps.next.outputs.run == 'true'
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL
+
+      - name: Get OpenShorts
+        if: steps.next.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: mutonby/openshorts
+          ref: ${{ env.OPENSHORTS_REF }}
+          path: openshorts
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.next.outputs.run == 'true'
+
+      - name: Build OpenShorts
+        if: steps.next.outputs.run == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: openshorts
+          load: true
+          tags: openshorts:local
+          cache-from: type=gha
+          cache-to: type=gha,mode=min
+
+      - name: Cut the video into clips
+        id: clip
+        if: steps.next.outputs.run == 'true'
+        env:
+          SOURCE_URL: ${{ steps.next.outputs.url }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
+          MAX_SOURCE_MINUTES: ${{ steps.next.outputs.max_source_minutes }}
+          AUTO_HOOK: ${{ steps.next.outputs.auto_hook }}
+        run: |
+          mkdir -p work && chmod 777 work
+          set +e
+          docker run --rm \
+            -e GEMINI_API_KEY -e YOUTUBE_COOKIES -e MAX_SOURCE_MINUTES -e AUTO_HOOK \
+            -v "$PWD/work:/work" openshorts:local \
+            python main.py -u "$SOURCE_URL" -o /work 2>&1 | tee work/openshorts.log
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Add the clips to the queue
+        id: collect
+        if: steps.next.outputs.run == 'true'
+        env:
+          SOURCE_URL: ${{ steps.next.outputs.url }}
+          CREDIT: ${{ steps.next.outputs.credit }}
+          EXIT_CODE: ${{ steps.clip.outputs.exit_code }}
+        run: python scripts/collect_clips.py work work/openshorts.log "$SOURCE_URL" "$CREDIT" "$EXIT_CODE"
+
+      - name: Store the clips
+        if: steps.collect.outputs.clips > 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view clips >/dev/null 2>&1 || \
+            gh release create clips --title "Clip storage" --notes "Clips waiting to be posted. Managed automatically."
+          gh release upload clips work/upload/*.mp4 --clobber
+
+      - name: Save progress
+        if: steps.next.outputs.run == 'true'
+        env:
+          CLIPS: ${{ steps.collect.outputs.clips }}
+        run: bash scripts/commit_state.sh "Make clips - $CLIPS new"
+
+      - name: Fail if the video produced nothing
+        if: steps.next.outputs.run == 'true' && steps.collect.outputs.clips == 0
+        run: |
+          echo "::error::No clips were produced from this source. See the 'Cut the video into clips' step."
+          exit 1
