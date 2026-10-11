@@ -20,3 +20,6 @@ credit_line: "🎥 {source}"
 
 # Skip a clip after this many failed posting attempts.
 max_attempts: 3
+
+# When sources.txt runs dry, how many new videos to pull from channels.txt at a time.
+videos_per_discovery: 2

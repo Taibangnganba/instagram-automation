@@ -20,9 +20,9 @@ def repo(tmp_path, monkeypatch):
     (tmp_path / "sources.txt").write_text(
         "# comment\nhttps://a.example/1 | @one\n\nhttps://a.example/2\n")
     mods = {}
-    for name in ("common", "ig", "next_source", "collect_clips", "post_reel"):
+    for name in ("common", "ig", "next_source", "collect_clips", "post_reel", "discover"):
         sys.modules.pop(name, None)
-    for name in ("common", "ig", "next_source", "collect_clips", "post_reel"):
+    for name in ("common", "ig", "next_source", "collect_clips", "post_reel", "discover"):
         mods[name] = importlib.import_module(name)
     mods["root"] = tmp_path
     return mods
@@ -164,3 +164,31 @@ def test_dry_run_changes_nothing(repo, monkeypatch):
     monkeypatch.setenv("DRY_RUN", "1")
     assert repo["post_reel"].post(path) == 0
     assert all(c["status"] == "ready" and c["attempts"] == 0 for c in repo["common"].load_clips())
+
+
+FEED_XML = """<?xml version="1.0"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns="http://www.w3.org/2005/Atom">
+ <entry><yt:videoId>{0}3</yt:videoId><link rel="alternate" href="https://www.youtube.com/shorts/{0}3"/></entry>
+ <entry><yt:videoId>{0}2</yt:videoId><link rel="alternate" href="https://www.youtube.com/watch?v={0}2"/></entry>
+ <entry><yt:videoId>{0}1</yt:videoId><link rel="alternate" href="https://www.youtube.com/watch?v={0}1"/></entry>
+</feed>"""
+ID_A, ID_B = "UC" + "a" * 22, "UC" + "b" * 22
+
+
+def test_discover_round_robin_skips_shorts_and_seen(repo):
+    (repo["root"] / "sources.txt").write_text("")
+    (repo["root"] / "channels.txt").write_text(
+        f"# c\nhttps://www.youtube.com/@alpha | @alpha\n{ID_B}\nhttps://www.youtube.com/@broken\n")
+    repo["common"].mark_processed("https://www.youtube.com/watch?v=A2", "done")
+
+    def fetch(url):
+        if url.endswith("/@alpha"):
+            return f'<link rel="alternate" href="https://www.youtube.com/feeds/videos.xml?channel_id={ID_A}">'
+        if url.endswith("/@broken"):
+            return "<html>consent</html>"
+        return FEED_XML.format("A" if ID_A in url else "B")
+
+    got = repo["discover"].discover(fetch, 3)
+    assert got == [("https://www.youtube.com/watch?v=A1", "@alpha"),
+                   ("https://www.youtube.com/watch?v=B2", ID_B),
+                   ("https://www.youtube.com/watch?v=B1", ID_B)]

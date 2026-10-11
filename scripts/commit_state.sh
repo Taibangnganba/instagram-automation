@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Commit the state/ folder and push, retrying if the other workflow pushed first.
+# Commit the state/ folder and sources.txt and push, retrying if the other workflow pushed first.
 set -euo pipefail
 git config user.name "capcutclips-bot"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git add state
+git add state sources.txt
 if git diff --cached --quiet; then
   echo "Nothing to save."
   exit 0

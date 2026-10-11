@@ -1,0 +1,10 @@
+# Channels the pipeline pulls new videos from automatically, one per line:
+#
+#   <channel link or ID> | <credit shown in the caption>
+#
+# Only list channels you are allowed to clip (your own, clipping campaigns,
+# creators who gave permission).
+#
+# Examples:
+# https://www.youtube.com/@somecreator | @somecreator
+# UCxxxxxxxxxxxxxxxxxxxxxx | @anothercreator

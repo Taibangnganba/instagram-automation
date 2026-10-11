@@ -20,6 +20,7 @@ DEFAULTS = {
     "hashtags": "",
     "credit_line": "",
     "max_attempts": 3,
+    "videos_per_discovery": 2,
 }
 
 

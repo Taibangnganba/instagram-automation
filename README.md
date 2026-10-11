@@ -12,15 +12,17 @@ sources.txt ──▶ Make clips (daily) ──▶ clip storage ──▶ Post r
 
 Clipping is done by [OpenShorts](https://github.com/mutonby/openshorts) (MIT), pinned to a fixed version in `make-clips.yml`. Posting uses Meta's official content publishing API, so there is no password sharing and no bot behaviour that could get the page banned.
 
-## Your only regular job
+## No regular job
 
-Add links to `sources.txt`, one per line, with the credit to show:
+List the channels to clip from once, in `channels.txt`:
 
 ```
-https://www.youtube.com/watch?v=XXXXXXXXXXX | @creatorhandle
+https://www.youtube.com/@creatorhandle | @creatorhandle
 ```
 
-Each video yields up to 4 clips, so three posts a day needs roughly five videos a week. Only add videos you are allowed to clip (your own footage, clipping campaigns, creators who gave permission); reposting other people's content without permission gets reels removed and pages restricted.
+Whenever the pipeline is about to run out of clips it pulls the newest long videos from those channels by itself (Shorts are skipped). To clip one specific video, add its link to `sources.txt`; those are always used first.
+
+Only list channels you are allowed to clip (your own, clipping campaigns, creators who gave permission); reposting other people's content without permission gets reels removed and pages restricted.
 
 ## One-time setup
 
@@ -44,7 +46,7 @@ Each video yields up to 4 clips, so three posts a day needs roughly five videos 
    | `YOUTUBE_COOKIES` | optional, see Troubleshooting |
 
 5. **Test**: Actions → *Check setup* → Run workflow. It should print `Connected to @kambam.capcutclips`.
-6. Add a few links to `sources.txt`, run *Make clips* once by hand, then run *Post reel* with "Rehearse without posting" ticked to preview the first caption.
+6. Add your channels to `channels.txt`, run *Make clips* once by hand, then run *Post reel* with "Rehearse without posting" ticked to preview the first caption.
 
 ## Schedule and settings
 

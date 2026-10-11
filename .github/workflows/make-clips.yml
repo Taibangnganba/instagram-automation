@@ -32,6 +32,9 @@ jobs:
 
       - run: pip install -q -r requirements.txt
 
+      - name: Look for new videos on your channels
+        run: python scripts/discover.py
+
       - name: Pick the next source video
         id: next
         run: python scripts/next_source.py
